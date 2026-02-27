@@ -197,8 +197,13 @@ app.post("/v1/api/user-detail", (req, res) => {
 });
 app.post("/v1/api/building", (req, res) => {
   const building_name = req.body.building_name;
-  const lat = req.body.lat;
-  const lng = req.body.lng;
+  const lat = parseFloat(req.body.lat);
+  const lng = parseFloat(req.body.lng);
+
+  if (!building_name || isNaN(lat) || isNaN(lng) ||
+      lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return res.status(400).json({ message: 'Missing or invalid required fields' });
+  }
 
   db.query(
     "INSERT INTO cam_sur.building (building_name, lat, lng) VALUES (?, ?, ?)",
@@ -235,7 +240,10 @@ app.post("/v1/api/switch-feed", (req, res) => {
 });
 
 app.delete("/v1/api/delete_camera/:camera_id", (req, res) => {
-  const camera_id = req.params.camera_id;
+  const camera_id = parseInt(req.params.camera_id, 10);
+  if (isNaN(camera_id) || camera_id <= 0) {
+    return res.status(400).json({ message: 'Invalid camera_id' });
+  }
   db.query(
     "DELETE FROM cam_sur.camera WHERE camera_id = ?",
     [camera_id],
@@ -254,10 +262,15 @@ app.delete("/v1/api/delete_camera/:camera_id", (req, res) => {
 
 app.post("/v1/api/addFloor", (req, res) => {
   const building_name = req.body.building_name;
-  const floor_num = req.body.floor_num;
+  const floor_num = parseInt(req.body.floor_num, 10);
   const camera_name = req.body.camera_name;
   const camera_loc = req.body.camera_loc;
   const date_of_installation = req.body.date_of_installation;
+
+  if (!building_name || isNaN(floor_num) || floor_num === 0 || !camera_name || !camera_loc) {
+    return res.status(400).json({ message: 'Missing or invalid required fields' });
+  }
+
   const addCamera = () => {
     db.query(
       "INSERT INTO cam_sur.camera (building_name, floor_num, camera_name, camera_loc, date_of_installation) VALUES (?, ?, ?, ?, DATE(?))",
@@ -311,9 +324,13 @@ app.get('/v1/api/safety-scores', async (req, res) => {
 
 // ─── Incidents (parsed from S3 CSV, default = today) ─────────────────────────
 // Query params: ?date=YYYY-MM-DD  (omit for today)
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 app.get('/v1/api/incidents', async (req, res) => {
   try {
     const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+    if (!DATE_RE.test(dateStr)) {
+      return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
     const start   = new Date(`${dateStr}T00:00:00.000Z`);
     const end     = new Date(`${dateStr}T23:59:59.999Z`);
     let incidents = await getIncidentsForRange(start, end);
