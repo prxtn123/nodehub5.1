@@ -211,9 +211,13 @@ app.get('/v1/api/safety-scores', async (req, res) => {
 });
 
 // GET /v1/api/incidents?date=YYYY-MM-DD  (default: today)
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 app.get('/v1/api/incidents', async (req, res) => {
   try {
     const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+    if (!DATE_RE.test(dateStr)) {
+      return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
     const start   = new Date(`${dateStr}T00:00:00.000Z`);
     const end     = new Date(`${dateStr}T23:59:59.999Z`);
     let incidents = await getIncidentsForRange(start, end);
@@ -246,17 +250,27 @@ app.post("/v1/api/user-detail", (req, res) => {
 
 app.post("/v1/api/building", (req, res) => {
   const { building_name, lat, lng } = req.body;
-  buildings.push({ building_name, lat, lng });
+  const parsedLat = parseFloat(lat);
+  const parsedLng = parseFloat(lng);
+  if (!building_name || isNaN(parsedLat) || isNaN(parsedLng) ||
+      parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+    return res.status(400).json({ message: 'Missing or invalid required fields' });
+  }
+  buildings.push({ building_name, lat: parsedLat, lng: parsedLng });
   res.json({ message: "Building name added successfully" });
 });
 
 app.post("/v1/api/addFloor", (req, res) => {
   const { building_name, floor_num, camera_name, camera_loc, date_of_installation } = req.body;
-  const newId = Math.max(...cameras.map((c) => c.camera_id)) + 1;
+  const parsedFloor = parseInt(floor_num, 10);
+  if (!building_name || isNaN(parsedFloor) || parsedFloor === 0 || !camera_name || !camera_loc) {
+    return res.status(400).json({ message: 'Missing or invalid required fields' });
+  }
+  const newId = (cameras.length > 0 ? Math.max(...cameras.map((c) => c.camera_id)) : 0) + 1;
   cameras.push({
     camera_id: newId,
     building_name,
-    floor_num,
+    floor_num: parsedFloor,
     camera_name,
     camera_loc,
     network_state: 1,

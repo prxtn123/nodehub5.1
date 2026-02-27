@@ -77,6 +77,8 @@ function getShift(timestamp) {
 }
 
 // ─── CSV fetch ────────────────────────────────────────────────────────────────
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 async function streamToString(stream) {
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
@@ -84,6 +86,10 @@ async function streamToString(stream) {
 }
 
 async function fetchCSVForDate(dateStr) {
+  if (!DATE_RE.test(dateStr)) {
+    console.warn(`[incidents] Invalid dateStr rejected: "${dateStr}"`);
+    return [];
+  }
   const cacheKey = `csv:${dateStr}`;
   const hit = getCached(cacheKey);
   if (hit !== null) return hit;
