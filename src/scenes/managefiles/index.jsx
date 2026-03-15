@@ -7,6 +7,24 @@ import { useTheme } from "@mui/material";
 import axios from 'axios';
 import React, { useState, useEffect, useRef} from "react";
 import screenfull from "screenfull";
+import API_CONFIG from "../../config/api";
+
+// SECURITY: File API URL from environment variable
+const FILE_API_URL = API_CONFIG.FILE_API_URL || process.env.REACT_APP_FILE_API_URL;
+
+// SECURITY: Validate filename to prevent path traversal attacks
+const isValidFilename = (filename) => {
+  if (!filename || typeof filename !== 'string') return false;
+  // Prevent path traversal
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return false;
+  }
+  // Check length
+  if (filename.length === 0 || filename.length > 255) {
+    return false;
+  }
+  return true;
+};
 
 const format = (seconds) => {
     if (isNaN(seconds)) {
@@ -118,56 +136,85 @@ const ManageFiles = () => {
   const fullMovieTime = format(movieDuration);
   
   const downloadfile = (filename) => {
-    var thisurl = 'https://booeg3cke4.execute-api.us-east-1.amazonaws.com/test/file';
-    thisurl = thisurl + '?filename='+ filename;
-    axios({url: thisurl, method: 'GET'})
+    // SECURITY: Validate filename to prevent path traversal
+    if (!isValidFilename(filename)) {
+      alert('Invalid filename');
+      return;
+    }
+
+    if (!FILE_API_URL) {
+      alert('File API not configured. Please contact administrator.');
+      return;
+    }
+
+    const url = `${FILE_API_URL}?filename=${encodeURIComponent(filename)}`;
+    axios({url: url, method: 'GET'})
       .then(response => {
         console.log(response);
-        // fetch(response.data).then(response=>response.blob()).then(blob=>{
-        //   const blobURL = window.URL.createObjectURL(new Blob([blob]));
-        //   const aTag = document.createElement("a");
-        //   aTag.href = blobURL;
-        //   document.body.appendChild(aTag);
-        //   aTag.click();
-        //   aTag.remove();
-        // })
         const aTag = document.createElement("a");
         aTag.href = response.data;
         document.body.appendChild(aTag);
         aTag.click();
         aTag.remove();
+      })
+      .catch(error => {
+        console.error('Download failed:', error);
+        alert('Failed to download file');
       });
-    
   }
   const [videourl, setVideo] = useState([]);
 
   const playfile = (filename) => {
-    var thisurl = 'https://booeg3cke4.execute-api.us-east-1.amazonaws.com/test/file';
-    thisurl = thisurl + '?filename='+ filename;
-    axios({url: thisurl, method: 'GET'})
+    // SECURITY: Validate filename to prevent path traversal
+    if (!isValidFilename(filename)) {
+      alert('Invalid filename');
+      return;
+    }
+
+    if (!FILE_API_URL) {
+      alert('File API not configured. Please contact administrator.');
+      return;
+    }
+
+    const url = `${FILE_API_URL}?filename=${encodeURIComponent(filename)}`;
+    axios({url: url, method: 'GET'})
       .then(response => {
-        // setVideo(response.data);
         console.log(response);
         const aTag = document.createElement("a");
         aTag.href = response.data;
         document.body.appendChild(aTag);
         setVideo(aTag);
-        // aTag.click();
-        // aTag.remove();
-
+      })
+      .catch(error => {
+        console.error('Play failed:', error);
+        alert('Failed to play file');
       });
   }
 
   const deletefile = (filename) => {
+    // SECURITY: Validate filename to prevent path traversal
+    if (!isValidFilename(filename)) {
+      alert('Invalid filename');
+      return;
+    }
+
+    if (!FILE_API_URL) {
+      alert('File API not configured. Please contact administrator.');
+      return;
+    }
+
     const choice = window.confirm("Are you sure to delete this file?")
     if (choice){
-
-      var thisurl = 'https://booeg3cke4.execute-api.us-east-1.amazonaws.com/test/file';
-      thisurl = thisurl + '?filename='+ filename;
-      axios({url: thisurl, method: 'DELETE'})
+      const url = `${FILE_API_URL}?filename=${encodeURIComponent(filename)}`;
+      axios({url: url, method: 'DELETE'})
         .then(response => {
           console.log(response.data);
+          alert('File deleted successfully');
           window.location.reload(false);
+        })
+        .catch(error => {
+          console.error('Delete failed:', error);
+          alert('Failed to delete file');
         });
     }
   };

@@ -1,3 +1,8 @@
+# AWS Amplify Deployment Guide - Node Safety Dashboard
+
+## 🚀 Quick Start: Deploying Your Secured App to Amplify
+
+This guide walks you through deploying the newly secured Node Safety Dashboard to AWS Amplify.
 # Deploying node Safety Dashboard to AWS Amplify Hosting
 
 This guide covers every step needed to deploy this React app to **AWS Amplify Hosting** (static-site hosting, not the Amplify Gen 2 full-stack CLI).
@@ -6,6 +11,201 @@ This guide covers every step needed to deploy this React app to **AWS Amplify Ho
 
 ## Prerequisites
 
+Before starting, ensure you have:
+- ✅ AWS Account with Amplify access
+- ✅ GitHub repository access (prxtn123/nodedash4.0)
+- ✅ AWS Cognito User Pool already created
+- ✅ Backend API deployed (EC2/ECS/Lambda) or ready to deploy
+- ✅ MySQL/RDS database set up
+- ✅ S3 bucket for incident data
+
+---
+
+## Part 1: Deploy Backend API (Choose One Option)
+
+### Option A: AWS EC2 (Recommended for Getting Started)
+
+**Step 1: Launch EC2 Instance**
+1. Go to AWS EC2 Console
+2. Click "Launch Instance"
+3. Choose:
+   - **AMI:** Amazon Linux 2023 or Ubuntu 22.04 LTS
+   - **Instance Type:** t3.small (minimum)
+   - **Security Group:** Allow inbound on port 3002 (or 80/443 with nginx)
+   - **Key Pair:** Create or select existing
+
+**Step 2: Install Node.js on EC2**
+```bash
+# SSH into your instance
+ssh -i your-key.pem ec2-user@your-ec2-public-ip
+
+# Install Node.js 18
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+# Or for Ubuntu:
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify installation
+node --version
+npm --version
+```
+
+**Step 3: Deploy Backend Code**
+```bash
+# Clone repository
+cd /home/ec2-user
+git clone https://github.com/prxtn123/nodedash4.0.git
+cd nodedash4.0/server
+
+# Install dependencies
+npm ci --production
+
+# Install PM2 (process manager)
+sudo npm install -g pm2
+```
+
+**Step 4: Configure Environment Variables**
+```bash
+# Create .env file
+cat > .env << 'EOF'
+# Server Configuration
+PORT=3002
+NODE_ENV=production
+CORS_ORIGIN=https://main.xxxxxx.amplifyapp.com
+
+# Database (RDS)
+DB_HOST=your-rds-endpoint.us-east-1.rds.amazonaws.com
+DB_USER=admin
+DB_PASSWORD=your-db-password
+DB_NAME=cam_sur
+DB_PORT=3306
+
+# AWS Credentials (or use IAM role)
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_REGION=us-east-1
+
+# Cognito
+AWS_USER_POOL_ID=us-east-1_xxxxxxxxx
+
+# S3
+S3_BUCKET_NAME=your-incident-bucket
+S3_INCIDENTS_PREFIX=incidents/
+S3_CLIPS_PRESIGN_EXPIRES=3600
+EOF
+
+# Secure the file
+chmod 600 .env
+```
+
+**Step 5: Start Backend Server**
+```bash
+# Start with PM2
+pm2 start index.js --name "safety-dashboard-api"
+
+# Configure to start on reboot
+pm2 startup
+pm2 save
+
+# Check status
+pm2 status
+pm2 logs safety-dashboard-api
+```
+
+**Step 6: Test Backend**
+```bash
+# Health check
+curl http://localhost:3002/health
+# Expected: {"status":"ok","timestamp":"..."}
+
+# Test (will fail without auth - expected)
+curl http://localhost:3002/v1/api/building-details
+# Expected: {"message":"Authentication required. No token provided."}
+```
+
+**Step 7: Get Your Backend URL**
+```bash
+# Your backend URL is:
+http://your-ec2-public-ip:3002
+
+# Or set up nginx reverse proxy for HTTPS:
+# https://api.yourdomain.com
+```
+
+---
+
+### Option B: AWS Elastic Beanstalk (Easier Management)
+
+**Step 1: Install EB CLI**
+```bash
+pip install awsebcli
+```
+
+**Step 2: Initialize Elastic Beanstalk**
+```bash
+cd /path/to/nodedash4.0/server
+eb init
+
+# Select:
+# - Region: us-east-1
+# - Platform: Node.js
+# - Application name: safety-dashboard-api
+```
+
+**Step 3: Configure Environment**
+```bash
+# Set environment variables
+eb setenv \
+  PORT=3002 \
+  NODE_ENV=production \
+  DB_HOST=your-rds-endpoint.amazonaws.com \
+  DB_USER=admin \
+  DB_PASSWORD=your-password \
+  DB_NAME=cam_sur \
+  AWS_USER_POOL_ID=us-east-1_xxxxxxxxx \
+  S3_BUCKET_NAME=your-bucket
+```
+
+**Step 4: Deploy**
+```bash
+eb create safety-dashboard-api-prod
+eb deploy
+
+# Get URL
+eb status
+# Your backend URL: http://safety-dashboard-api-prod.xxxxx.elasticbeanstalk.com
+```
+
+---
+
+## Part 2: Deploy Frontend to AWS Amplify
+
+### Step 1: Connect Repository to Amplify
+
+1. **Go to AWS Amplify Console**
+   - Navigate to: https://console.aws.amazon.com/amplify/
+   - Click **"New app"** → **"Host web app"**
+
+2. **Connect Repository**
+   - Select **GitHub**
+   - Authenticate with GitHub if needed
+   - Select repository: **prxtn123/nodedash4.0**
+   - Select branch: **claude/fix-security-issues-in-app** (or main after merging)
+   - Click **Next**
+
+### Step 2: Configure Build Settings
+
+The `amplify.yml` file is already configured, but verify it shows:
+
+```yaml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - echo "No backend build - frontend only"
 | Requirement | Notes |
 |---|---|
 | AWS account | Free tier is fine for a small team |

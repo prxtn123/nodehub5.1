@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Auth } from "@aws-amplify/auth";
+import axios from "axios";
 import Header from "../../components/Header";
 import {
   Box,
@@ -17,11 +18,6 @@ import { tokens } from "../../theme";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Team from "../team";
-import {
-  CognitoIdentityProviderClient,
-  ListUsersCommand,
-  AdminDeleteUserCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
 
 function Contacts() {
   const theme = useTheme();
@@ -29,33 +25,31 @@ function Contacts() {
   const colors = tokens(theme.palette.mode);
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState([]);
-  const REGION = process.env.REACT_APP_AWS_REGION;
-  const cognitoClient = new CognitoIdentityProviderClient({
-    region: REGION,
-    credentials: {
-      accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-    },
-  });
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+
+  // SECURITY: AWS operations moved to backend API - frontend should never have AWS credentials
   const listUsers = async () => {
     try {
-      const data = await cognitoClient.send(
-        new ListUsersCommand({ UserPoolId: "us-east-1_yZDcfnqL2" })
-      );
-      const usersWithIds = data.Users.map((user, index) => ({
+      const session = await Auth.currentSession();
+      const token = session.getIdToken().getJwtToken();
+
+      const response = await axios.get(`${API_URL}/v1/api/cognito/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const usersWithIds = response.data.users.map((user, index) => ({
         id: index + 1,
-        username: user.Username,
-        email: user.Attributes.find((attr) => attr.Name === "email").Value,
-        status: user.UserStatus,
-        isAdmin:
-          user.Attributes.find((attr) => attr.Name === "custom:admin").Value ===
-          "true"
-            ? "Admin"
-            : "Staff",
+        username: user.username,
+        email: user.email,
+        status: user.status,
+        isAdmin: user.isAdmin ? "Admin" : "Staff",
       }));
       setUsers(usersWithIds);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching users:", error);
+      alert("Failed to load users. Please try again.");
     }
   };
 
@@ -79,27 +73,30 @@ function Contacts() {
   }, []);
 
   const handleClick = async (event, cellproperties) => {
-    if (isCurrentUserAdmin === "true") {
-      event.preventDefault();
+    if (isCurrentUserAdmin !== "true") {
+      console.log("Only Administrators can delete users");
+      alert("Only Administrators can delete users");
+      return;
+    }
 
-      try {
-        const params = {
-          UserPoolId: process.env.REACT_APP_USER_POOL_ID, // Replace with your user pool ID
-          Username: cellproperties.row.username,
-        };
+    event.preventDefault();
 
-        const command = new AdminDeleteUserCommand(params);
-        const response = await cognitoClient.send(command);
-        console.log(response);
-        alert("user deleted successfully");
-        window.location.reload(false);
-      } catch (err) {
-        console.log("Error deleting user:", err);
-      }
-    } else {
-      console.log("You are logged in as", isCurrentUserAdmin); //can del
-      console.log("Only Admininstrators can delete users");
-      alert("Only Admininstrators can delete users");
+    try {
+      const session = await Auth.currentSession();
+      const token = session.getIdToken().getJwtToken();
+
+      await axios.delete(`${API_URL}/v1/api/cognito/users/${cellproperties.row.username}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert("User deleted successfully");
+      // Refresh the user list
+      listUsers();
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      alert("Failed to delete user. Please try again.");
     }
   };
 
