@@ -3,13 +3,14 @@ import { Button, Box, InputBase, Typography } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import { useNavigate } from "react-router-dom";
 import PaymentSuccess from "./paymentSuccess";
+import { authenticatedPost } from "../../config/api";
 
 const Billing = () => {
   const colorMode = useContext(ColorModeContext);
   const colors = tokens(colorMode);
   const navigate = useNavigate();
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  
+
 
   useEffect(() => {
     if (showPaymentSuccess) {
@@ -19,25 +20,18 @@ const Billing = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    fetch('http://localhost:3002/v1/api/billing',{
-          method:'POST',
-          headers:{
-            'Accept':'application/json',
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({
-            'userid' : 1 
-          })
-        })
-        .then(res => res.json())
-        .then((result)=>
-        {
-            setShowPaymentSuccess(true);
-        },
-        (error)=>{
-            console.log("Some error occurred!!")
-        }
-        )
+
+    try {
+      // SECURITY: Now uses authenticated API call, user ID comes from JWT token
+      await authenticatedPost('/v1/api/billing', {
+        balance_rem: 0 // Reset balance
+      });
+
+      setShowPaymentSuccess(true);
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert("Payment processing failed. Please try again.");
+    }
   };
 
   if (showPaymentSuccess) {

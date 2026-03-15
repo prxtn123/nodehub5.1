@@ -2,8 +2,8 @@ import { Box, Typography } from "@mui/material";
 import Header from "../../components/Header";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../theme";
-import axios from "axios";
 import { useState, useEffect } from "react";
+import { authenticatedGet } from "../../config/api";
 
 import DisplayControlBoxOne from "./displayboxone";
 import DisplayControlBoxFour from "./displayboxfour";
@@ -25,23 +25,28 @@ const Settings = () => {
   }, []);
 
   const getCameraFeedData = async () => {
-    const response = await axios.get(
-      "http://localhost:3002/v1/api/camera-select"
-    );
-    setCameraFeeds(response.data);
-    setUniqueBuildingNames([
-      ...new Set(response.data.map((camera) => camera.building_name)),
-    ]);
-    console.log("DATA: ", response.data);
+    try {
+      // SECURITY: Now uses authenticated API call
+      const data = await authenticatedGet("/v1/api/camera-select");
+      setCameraFeeds(data);
+      setUniqueBuildingNames([
+        ...new Set(data.map((camera) => camera.building_name)),
+      ]);
+      console.log("DATA: ", data);
+    } catch (error) {
+      console.error("Error fetching camera feeds:", error);
+    }
   };
 
   const getDashboardFeedData = async () => {
-    const response = await axios.get(
-      "http://localhost:3002/v1/api/dashboard-feed"
-    );
-    setDashboardFeed(response.data);
-
-    console.log("DATAxxx: ", response.data);
+    try {
+      // SECURITY: Now uses authenticated API call
+      const data = await authenticatedGet("/v1/api/dashboard-feed");
+      setDashboardFeed(data);
+      console.log("DATAxxx: ", data);
+    } catch (error) {
+      console.error("Error fetching dashboard feeds:", error);
+    }
   };
 
   return (

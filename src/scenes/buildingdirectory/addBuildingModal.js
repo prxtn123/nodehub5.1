@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import { Modal, Button, Row, Col, Form } from "react-bootstrap";
-
+import { Auth } from 'aws-amplify';
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
 import { green } from "@mui/material/colors";
+import API_CONFIG from "../../config/api";
 
 export class AddBuildingModal extends Component {
   constructor(props) {
@@ -17,31 +18,40 @@ export class AddBuildingModal extends Component {
     this.setState({ snackbaropen: false });
   };
 
-  handleSubmit(event) {
+  async handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://localhost:3002/v1/api/building", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        building_name: event.target.BuildingName.value,
-        lat: this.props.lat,
-        lng: this.props.lng,
-      }),
-    })
-      .then((res) => res.json())
-      .then(
-        (result) => {
-          this.setState({ snackbaropen: true, snackbarmsg: result.message });
-          window.location.reload(false); //reload on building addition
+    try {
+      // SECURITY: Get authentication token
+      const session = await Auth.currentSession();
+      const token = session.getIdToken().getJwtToken();
+
+      const response = await fetch(`${API_CONFIG.BACKEND_URL}/v1/api/building`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        (error) => {
-          this.setState({ snackbaropen: true, snackbarmsg: "failed" });
-        }
-      );
+        body: JSON.stringify({
+          building_name: event.target.BuildingName.value,
+          lat: this.props.lat,
+          lng: this.props.lng,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        this.setState({ snackbaropen: true, snackbarmsg: result.message });
+        window.location.reload(false); //reload on building addition
+      } else {
+        this.setState({ snackbaropen: true, snackbarmsg: result.message || "failed" });
+      }
+    } catch (error) {
+      console.error('Error adding building:', error);
+      this.setState({ snackbaropen: true, snackbarmsg: "failed" });
+    }
   }
   latitude = this.props.info;
   render() {
