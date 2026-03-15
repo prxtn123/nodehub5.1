@@ -1,21 +1,21 @@
 /**
- * Incident Service – S3 CSV fetch, parse, and score computation
- * ──────────────────────────────────────────────────────────────
- * Data pipeline:
- *   Jetson device  →  appends rows to S3 CSV  →  this service fetches + parses  →  Express routes
+ * Incident Service – Supabase-based metadata fetch with S3 presigned URLs
+ * ────────────────────────────────────────────────────────────────────────────
+ * Data pipeline (NEW with Supabase):
+ *   Jetson device → Uploads clip to S3 → Calls backend API → Stores metadata in Supabase
+ *   Dashboard → Queries backend API → Fetches from Supabase → Generates S3 presigned URLs
  *
- * Local development fallback:
- *   If S3_BUCKET_NAME is not set, the service looks for local files under
- *   server/data/incidents/YYYY-MM-DD.csv so you can test without S3 access.
- *   Place a sample CSV there to see live scoring locally.
+ * This replaces the CSV-based approach with a proper database.
  *
  * Required env vars (server/.env):
- *   AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
- *   S3_BUCKET_NAME, S3_INCIDENTS_PREFIX, S3_CLIPS_PRESIGN_EXPIRES
+ *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, AWS_REGION, AWS_ACCESS_KEY_ID,
+ *   AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_CLIPS_PRESIGN_EXPIRES
  */
 
-const path = require('path');
-const fs   = require('fs');
+const {
+  getIncidentsByDateRange,
+  getIncidentsByDate,
+} = require('./supabaseService');
 
 // AWS SDK loaded lazily so the app still starts if the package isn't installed yet
 let S3Client, GetObjectCommand, getSignedUrl;
@@ -23,16 +23,14 @@ try {
   ({ S3Client, GetObjectCommand } = require('@aws-sdk/client-s3'));
   ({ getSignedUrl }               = require('@aws-sdk/s3-request-presigner'));
 } catch {
-  // SDK not installed – S3 features disabled, local file fallback still works
+  // SDK not installed – S3 features disabled
 }
 
-const { SCORING_RULES, computeScore } = require('../config/scoring');
+const { computeScore } = require('../config/scoring');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const BUCKET           = process.env.S3_BUCKET_NAME;
-const INCIDENTS_PREFIX = process.env.S3_INCIDENTS_PREFIX || 'incidents/';
-const PRESIGN_EXPIRES  = parseInt(process.env.S3_CLIPS_PRESIGN_EXPIRES || '3600', 10);
-const LOCAL_DATA_DIR   = path.join(__dirname, '..', 'data', 'incidents');
+const BUCKET          = process.env.S3_BUCKET_NAME;
+const PRESIGN_EXPIRES = parseInt(process.env.S3_CLIPS_PRESIGN_EXPIRES || '3600', 10);
 
 const s3 = (S3Client && BUCKET)
   ? new S3Client({ region: process.env.AWS_REGION || 'eu-west-2' })
@@ -61,147 +59,9 @@ function startOfWeek(d) {
 }
 function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 
-function dateRange(start, end) {
-  const dates = [];
-  const cur   = new Date(startOfDay(start));
-  const last  = new Date(startOfDay(end));
-  while (cur <= last) { dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
-  return dates;
-}
-
-function getShift(timestamp) {
-  const h = new Date(timestamp).getUTCHours();
-  if (h >= 6  && h < 14) return 'morning';
-  if (h >= 14 && h < 22) return 'afternoon';
-  return 'night';
-}
-
-// ─── CSV fetch ────────────────────────────────────────────────────────────────
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-async function streamToString(stream) {
-  const chunks = [];
-  for await (const chunk of stream) chunks.push(chunk);
-  return Buffer.concat(chunks).toString('utf-8');
-}
-
-async function fetchCSVForDate(dateStr) {
-  if (!DATE_RE.test(dateStr)) {
-    console.warn(`[incidents] Invalid dateStr rejected: "${dateStr}"`);
-    return [];
-  }
-  const cacheKey = `csv:${dateStr}`;
-  const hit = getCached(cacheKey);
-  if (hit !== null) return hit;
-
-  // 1. Local file (development / testing)
-  const localFile = path.join(LOCAL_DATA_DIR, `${dateStr}.csv`);
-  if (fs.existsSync(localFile)) {
-    const incidents = parseCSV(fs.readFileSync(localFile, 'utf-8'));
-    setCached(cacheKey, incidents);
-    return incidents;
-  }
-
-  // 2. S3
-  if (!s3 || !BUCKET) {
-    setCached(cacheKey, []);
-    return [];
-  }
-
-  try {
-    const resp      = await s3.send(new GetObjectCommand({
-      Bucket: BUCKET,
-      Key:    `${INCIDENTS_PREFIX}${dateStr}.csv`,
-    }));
-    const text      = await streamToString(resp.Body);
-    const incidents = parseCSV(text);
-    setCached(cacheKey, incidents);
-    return incidents;
-  } catch (err) {
-    if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
-      setCached(cacheKey, []); // cache the miss to avoid repeat 404s
-      return [];
-    }
-    console.error(`[incidents] S3 error for ${dateStr}:`, err.message);
-    return [];
-  }
-}
-
-// ─── CSV parsing ──────────────────────────────────────────────────────────────
-/**
- * Parse a CSV string into enriched incident objects.
- * Expected header row:
- *   timestamp,incident_type,camera_id,building_name,floor_num,location,clip_s3_key,duration_seconds
- */
-function parseCSV(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (lines.length < 2) return [];
-
-  const headers   = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const incidents = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const vals = splitCSVRow(lines[i]);
-    if (vals.length < headers.length) continue;
-
-    const row = {};
-    headers.forEach((h, idx) => { row[h] = vals[idx]; });
-
-    const rule = SCORING_RULES[row.incident_type];
-    if (!rule) {
-      console.warn(`[incidents] Unknown incident_type "${row.incident_type}" on row ${i + 1} – skipping`);
-      continue;
-    }
-
-    incidents.push({
-      id:                `${row.timestamp}-${row.camera_id}`,
-      timestamp:         row.timestamp,
-      date:              row.timestamp.slice(0, 10),
-      time:              row.timestamp.slice(11, 19),
-      incident_type:     row.incident_type,
-      safety_event_type: row.incident_type,          // frontend compatibility alias
-      camera_id:         row.camera_id,
-      building_name:     row.building_name,
-      floor_num:         parseInt(row.floor_num, 10) || 1,
-      location:          row.location,
-      clip_s3_key:       row.clip_s3_key || null,
-      video_url:         null,                        // populated by addPresignedUrls()
-      duration:          row.duration_seconds ? `${parseFloat(row.duration_seconds).toFixed(1)}s` : null,
-      duration_seconds:  parseFloat(row.duration_seconds) || 0,
-      risk_score:        rule.risk_score,
-      severity:          rule.severity,
-      label:             rule.label,
-      description:       rule.description,
-      emoji:             rule.emoji,
-      group:             rule.group,
-      deduction:         rule.deduction,
-      shift:             getShift(row.timestamp),
-    });
-  }
-
-  return incidents;
-}
-
-function splitCSVRow(line) {
-  const result = [];
-  let cur = '', inQ = false;
-  for (const ch of line) {
-    if      (ch === '"')            { inQ = !inQ; }
-    else if (ch === ',' && !inQ)   { result.push(cur.trim()); cur = ''; }
-    else                            { cur += ch; }
-  }
-  result.push(cur.trim());
-  return result;
-}
-
-// ─── Range query ──────────────────────────────────────────────────────────────
+// ─── Range query (delegates to Supabase) ─────────────────────────────────────
 async function getIncidentsForRange(startDate, endDate) {
-  const dates  = dateRange(startDate, endDate);
-  const arrays = await Promise.all(dates.map(fetchCSVForDate));
-  return arrays.flat().filter(inc => {
-    const ts = new Date(inc.timestamp);
-    return ts >= startDate && ts <= endDate;
-  });
+  return getIncidentsByDateRange(startDate, endDate);
 }
 
 // ─── Presigned URL generation ─────────────────────────────────────────────────
