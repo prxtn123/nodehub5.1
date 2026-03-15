@@ -15,6 +15,7 @@ const express = require("express");
 const db = require("./config/db");
 const cors = require("cors");
 const { getSafetyScores, getIncidentsForRange, addPresignedUrls } = require('./services/incidentService');
+const { createIncident } = require('./services/supabaseService');
 const { authenticateToken, requireAdmin, rateLimiter, inputValidation } = require('./middleware/auth');
 const { listUsers, deleteUser } = require('./services/cognitoService');
 
@@ -508,12 +509,12 @@ app.post("/v1/api/billing", authenticateToken, (req, res) => {
 });
 
 // ============================================================================
-// SAFETY SCORES & INCIDENTS (S3-based data)
+// SAFETY SCORES & INCIDENTS (Supabase metadata + S3 clips)
 // ============================================================================
 
 /**
  * GET /v1/api/safety-scores
- * Get safety scores computed from S3 incident data
+ * Get safety scores computed from incident metadata in Supabase
  * SECURITY: Requires authentication
  */
 app.get('/v1/api/safety-scores', authenticateToken, async (req, res) => {
@@ -551,6 +552,80 @@ app.get('/v1/api/incidents', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('[incidents]', err.message);
     res.status(500).json({ message: 'Error fetching incidents' });
+  }
+});
+
+/**
+ * POST /v1/api/incidents
+ * Report a new safety incident (called by Jetson devices after uploading clip to S3)
+ * SECURITY: Requires authentication + input validation
+ *
+ * Request body:
+ * {
+ *   "timestamp": "2026-03-15T14:32:45.000Z",
+ *   "incident_type": "no-high-vis",
+ *   "camera_id": "cam-01",
+ *   "building_name": "Clark Building",
+ *   "floor_num": 1,
+ *   "location": "Main Entrance",
+ *   "clip_s3_key": "clips/2026-03-15/cam-01-14:32:45.mp4",
+ *   "duration_seconds": 3.2
+ * }
+ */
+app.post('/v1/api/incidents', authenticateToken, async (req, res) => {
+  try {
+    const {
+      timestamp,
+      incident_type,
+      camera_id,
+      building_name,
+      floor_num,
+      location,
+      clip_s3_key,
+      duration_seconds,
+    } = req.body;
+
+    // Validate required fields
+    if (!timestamp || !incident_type || !camera_id || !building_name) {
+      return res.status(400).json({
+        message: 'Missing required fields: timestamp, incident_type, camera_id, building_name'
+      });
+    }
+
+    // Validate timestamp format (ISO 8601)
+    const timestampDate = new Date(timestamp);
+    if (isNaN(timestampDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid timestamp format. Use ISO 8601' });
+    }
+
+    // Sanitize inputs
+    const sanitizedIncident = {
+      timestamp: timestampDate.toISOString(),
+      incident_type: inputValidation.sanitizeString(incident_type, 100),
+      camera_id: inputValidation.sanitizeString(camera_id, 100),
+      building_name: inputValidation.sanitizeString(building_name, 255),
+      floor_num: parseInt(floor_num, 10) || 1,
+      location: inputValidation.sanitizeString(location, 255) || '',
+      clip_s3_key: inputValidation.sanitizeString(clip_s3_key, 512) || null,
+      duration_seconds: parseFloat(duration_seconds) || 0,
+    };
+
+    // Store in Supabase
+    const incident = await createIncident(sanitizedIncident);
+
+    res.status(201).json({
+      message: 'Incident reported successfully',
+      incident
+    });
+  } catch (err) {
+    console.error('[incidents] Error creating incident:', err.message);
+
+    // Handle specific errors
+    if (err.message.includes('Invalid incident_type')) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    res.status(500).json({ message: 'Error reporting incident' });
   }
 });
 
