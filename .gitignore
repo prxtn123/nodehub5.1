@@ -51,3 +51,11 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
+
+# Amplify CLI configuration (conflicts with Amplify Hosting)
+# This project uses Amplify Hosting (amplify.yml), not Amplify CLI
+amplify/.config/
+amplify/cli.json
+amplify/team-provider-info.json
+amplify/README.md
+amplify/hooks/
