@@ -13,14 +13,6 @@ const getRiskLevel = (score) => {
  */
 const IncidentCard = ({ incident, onPlayClick, isAcknowledged = false, onAcknowledge }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-
-  const handlePlayClick = () => {
-    setIsPlaying(true);
-    if (onPlayClick) {
-      onPlayClick(incident);
-    }
-  };
-
   const risk = incident.risk_score != null ? getRiskLevel(incident.risk_score) : null;
 
   return (
@@ -33,12 +25,14 @@ const IncidentCard = ({ incident, onPlayClick, isAcknowledged = false, onAcknowl
         )}
         {!isPlaying ? (
           <>
-            <img
+            <video
               src={incident.video_url}
-              alt="Incident preview"
+              preload="metadata"
+              muted
+              playsInline
               className="incident-video-thumbnail"
             />
-            <div className="incident-play-overlay" onClick={handlePlayClick}>
+            <div className="incident-play-overlay" onClick={() => { setIsPlaying(true); onPlayClick?.(incident); }}>
               <div className="incident-play-button">
                 <svg viewBox="0 0 24 24" fill="white">
                   <path d="M8 5v14l11-7z" />

@@ -26,23 +26,10 @@
 
 const supabase = require('../config/supabase');
 const { SCORING_RULES } = require('../config/scoring');
+const { makeCache } = require('../utils/cache');
 
 const TABLE_NAME = 'incidents';
-
-// ─── In-memory cache (5-minute TTL) ──────────────────────────────────────────
-const _cache    = {};
-const CACHE_TTL = 5 * 60 * 1000;
-
-function getCached(key) {
-  const e = _cache[key];
-  if (!e) return null;
-  if (Date.now() - e.at > CACHE_TTL) { delete _cache[key]; return null; }
-  return e.v;
-}
-
-function setCached(key, v) {
-  _cache[key] = { v, at: Date.now() };
-}
+const cache = makeCache();
 
 // ─── Helper: Enrich incident with scoring data ───────────────────────────────
 function enrichIncident(row) {
@@ -133,7 +120,7 @@ async function createIncident(incident) {
   }
 
   // Clear cache on write
-  Object.keys(_cache).forEach(k => delete _cache[k]);
+  cache.clearAll();
 
   return enrichIncident(data);
 }
@@ -153,7 +140,7 @@ async function getIncidentsByDateRange(startDate, endDate) {
   }
 
   const cacheKey = `range:${startDate.toISOString()}-${endDate.toISOString()}`;
-  const cached = getCached(cacheKey);
+  const cached = cache.get(cacheKey);
   if (cached) return cached;
 
   const { data, error } = await supabase
@@ -169,7 +156,7 @@ async function getIncidentsByDateRange(startDate, endDate) {
   }
 
   const enriched = (data || []).map(enrichIncident);
-  setCached(cacheKey, enriched);
+  cache.set(cacheKey, enriched);
   return enriched;
 }
 
@@ -192,14 +179,14 @@ async function getIncidentsByDate(dateStr) {
   }
 
   const cacheKey = `date:${dateStr}`;
-  const cached = getCached(cacheKey);
+  const cached = cache.get(cacheKey);
   if (cached) return cached;
 
   const startDate = new Date(`${dateStr}T00:00:00.000Z`);
   const endDate = new Date(`${dateStr}T23:59:59.999Z`);
 
   const incidents = await getIncidentsByDateRange(startDate, endDate);
-  setCached(cacheKey, incidents);
+  cache.set(cacheKey, incidents);
   return incidents;
 }
 
@@ -252,7 +239,7 @@ async function bulkInsertIncidents(incidents) {
   }
 
   // Clear cache after bulk insert
-  Object.keys(_cache).forEach(k => delete _cache[k]);
+  cache.clearAll();
 
   return { inserted: totalInserted };
 }
@@ -283,7 +270,7 @@ async function deleteIncidentsByDateRange(startDate, endDate) {
   }
 
   // Clear cache after delete
-  Object.keys(_cache).forEach(k => delete _cache[k]);
+  cache.clearAll();
 
   return { deleted: data?.length || 0 };
 }

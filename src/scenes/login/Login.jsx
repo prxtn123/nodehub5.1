@@ -3,6 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Auth } from 'aws-amplify';
 import './Login.css';
 
+const PwdRules = ({ password }) => {
+  const rules = [
+    { label: '8+ characters', ok: password.length >= 8 },
+    { label: 'Uppercase',     ok: /[A-Z]/.test(password) },
+    { label: 'Number',        ok: /[0-9]/.test(password) },
+    { label: 'Symbol',        ok: /[^A-Za-z0-9]/.test(password) },
+  ];
+  return (
+    <div className="login-pwd-rules">
+      {rules.map(r => (
+        <span key={r.label} className={`pwd-rule ${r.ok ? 'ok' : ''}`}>
+          {r.ok ? '✓' : '○'} {r.label}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 /**
  * Login - Sign-in page for node Safety Dashboard
  * Connects to AWS Cognito User Pool via Amplify Auth
@@ -128,14 +146,6 @@ const Login = () => {
       setLoading(false);
     }
   };
-
-  // ── Password strength hint ────────────────────────────────────
-  const pwdRules = [
-    { label: '8+ characters',  ok: newPassword.length >= 8 },
-    { label: 'Uppercase',       ok: /[A-Z]/.test(newPassword) },
-    { label: 'Number',          ok: /[0-9]/.test(newPassword) },
-    { label: 'Symbol',          ok: /[^A-Za-z0-9]/.test(newPassword) },
-  ];
 
   // ── Shared field component ────────────────────────────────────
   const Field = ({ label, right, type = 'text', value, onChange, placeholder, autoComplete }) => (
@@ -281,15 +291,7 @@ const Login = () => {
                   autoComplete="new-password"
                 />
 
-                {newPassword.length > 0 && (
-                  <div className="login-pwd-rules">
-                    {pwdRules.map(r => (
-                      <span key={r.label} className={`pwd-rule ${r.ok ? 'ok' : ''}`}>
-                        {r.ok ? '✓' : '○'} {r.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {newPassword.length > 0 && <PwdRules password={newPassword} />}
 
                 {error && <p className="login-error">{error}</p>}
 
@@ -366,15 +368,7 @@ const Login = () => {
                   autoComplete="new-password"
                 />
 
-                {newPassword.length > 0 && (
-                  <div className="login-pwd-rules">
-                    {pwdRules.map(r => (
-                      <span key={r.label} className={`pwd-rule ${r.ok ? 'ok' : ''}`}>
-                        {r.ok ? '✓' : '○'} {r.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {newPassword.length > 0 && <PwdRules password={newPassword} />}
 
                 {error   && <p className="login-error">{error}</p>}
                 {success && <p className="login-success">{success}</p>}

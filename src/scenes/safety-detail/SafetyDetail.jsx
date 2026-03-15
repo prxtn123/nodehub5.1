@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NodeLogo from '../../components/NodeLogo';
-import { fetchSafetyScores } from '../../services/dashboardApi';
-import { fetchIncidents } from '../../services/mockData';
+import { fetchSafetyScores, fetchIncidents } from '../../services/dashboardApi';
 import './SafetyDetail.css';
 
 const PERIODS = [
@@ -12,9 +11,10 @@ const PERIODS = [
 ];
 
 const TYPE_CONFIG = {
-  'no-high-vis':    { label: 'No High-Vis',     color: '#a78bfa', emoji: '🦺' },
-  'mhe-close':      { label: 'MHE Too Close',   color: '#f87171', emoji: '🚜' },
-  'walkway-zoning': { label: 'Walkway Zoning',  color: '#fbbf24', emoji: '🚧' },
+  'ppe':     { label: 'No High-Vis',    color: '#a78bfa', emoji: '🦺' },
+  'mhe':     { label: 'MHE Proximity', color: '#f87171', emoji: '🚜' },
+  'walkway': { label: 'Walkway Safety', color: '#fbbf24', emoji: '🚧' },
+  'dock':    { label: 'Dock Door Open', color: '#fb923c', emoji: '🚪' },
 };
 
 const getScoreColor = (s) => {
@@ -49,7 +49,8 @@ const SafetyDetail = () => {
   const scoreColor = getScoreColor(score);
 
   const typeCounts = incidents.reduce((acc, i) => {
-    acc[i.safety_event_type] = (acc[i.safety_event_type] || 0) + 1;
+    const key = i.group || 'other';
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
   const maxCount = Math.max(...Object.values(typeCounts), 1);

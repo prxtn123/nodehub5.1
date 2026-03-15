@@ -165,10 +165,12 @@ const IncidentsPage = () => {
                 <span>Risk score: {selectedIncident.risk_score}</span>
               )}
             </div>
-            <img
+            <video
               src={selectedIncident.video_url}
-              alt="Incident clip"
-              className="ip-modal-img"
+              controls
+              autoPlay
+              controlsList="nodownload"
+              className="ip-modal-video"
             />
             {selectedIncident.description && (
               <p className="ip-modal-desc">{selectedIncident.description}</p>

@@ -29,10 +29,16 @@ app.use(rateLimiter); // Apply rate limiting to all routes
 
 // Request logging for audit trail
 app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.path} - IP: ${req.ip}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${req.ip}`);
   next();
 });
+
+// ── DB helper ──────────────────────────────────────────────────────────────
+const dbQuery = (res, sql, params = []) =>
+  db.query(sql, params, (err, result) => {
+    if (err) { console.error('[DB]', err); return res.status(500).json({ message: 'Database error' }); }
+    res.json(result);
+  });
 
 // ============================================================================
 // COGNITO USER MANAGEMENT ENDPOINTS (ADMIN ONLY)
@@ -78,23 +84,10 @@ app.delete("/v1/api/cognito/users/:username", authenticateToken, requireAdmin, a
 // PUBLIC ENDPOINTS (Read-only data for authenticated users)
 // ============================================================================
 
-/**
- * GET /v1/api/building-details
- * Get all buildings with coordinates
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/building-details", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT building_name, lat, lng FROM cam_sur.building",
-    (error, result) => {
-      if (error) {
-        console.error('[DB Error]', error);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/building-details
+app.get("/v1/api/building-details", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT building_name, lat, lng FROM cam_sur.building")
+);
 
 /**
  * GET /v1/api/floor-detail
@@ -158,153 +151,48 @@ app.get("/v1/api/user-detail", authenticateToken, (req, res) => {
   );
 });
 
-/**
- * GET /v1/api/camera-detail
- * Get total camera count
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/camera-detail", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT COUNT(*) as count FROM cam_sur.camera",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/camera-detail
+app.get("/v1/api/camera-detail", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT COUNT(*) as count FROM cam_sur.camera")
+);
 
-/**
- * GET /v1/api/camera-select
- * Get all cameras
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/camera-select", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT * FROM cam_sur.camera",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/camera-select
+app.get("/v1/api/camera-select", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT * FROM cam_sur.camera")
+);
 
-/**
- * GET /v1/api/dashboard-feed
- * Get dashboard video feeds
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/dashboard-feed", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT * FROM cam_sur.dashboard_feeds",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/dashboard-feed
+app.get("/v1/api/dashboard-feed", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT * FROM cam_sur.dashboard_feeds")
+);
 
-/**
- * GET /v1/api/building-count
- * Get total building count
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/building-count", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT COUNT(*) as count FROM cam_sur.building",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/building-count
+app.get("/v1/api/building-count", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT COUNT(*) as count FROM cam_sur.building")
+);
 
-/**
- * GET /v1/api/inactive-active-cameras
- * Get count of active and inactive cameras
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/inactive-active-cameras", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT SUM(CASE WHEN network_state = 0 THEN 1 ELSE 0 END) AS inactive, SUM(CASE WHEN network_state = 1 THEN 1 ELSE 0 END) AS active FROM cam_sur.camera",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/inactive-active-cameras
+app.get("/v1/api/inactive-active-cameras", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT SUM(CASE WHEN network_state = 0 THEN 1 ELSE 0 END) AS inactive, SUM(CASE WHEN network_state = 1 THEN 1 ELSE 0 END) AS active FROM cam_sur.camera")
+);
 
-/**
- * GET /v1/api/camera-table
- * Get camera statistics by building
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/camera-table", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT building_name, COUNT(*) AS num_cameras, SUM(CASE WHEN network_state = 1 THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN network_state = 0 THEN 1 ELSE 0 END) AS inactive FROM cam_sur.camera GROUP BY building_name",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/camera-table
+app.get("/v1/api/camera-table", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT building_name, COUNT(*) AS num_cameras, SUM(CASE WHEN network_state = 1 THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN network_state = 0 THEN 1 ELSE 0 END) AS inactive FROM cam_sur.camera GROUP BY building_name")
+);
 
-/**
- * GET /v1/api/recent-alerts
- * Get 10 most recent alerts
- * SECURITY: Requires authentication
- */
-app.get("/v1/api/recent-alerts", authenticateToken, (req, res) => {
-  db.query(
-    "SELECT building_name, event_type, event_date, camera_loc FROM cam_sur.event JOIN cam_sur.camera ON cam_sur.event.camera_id = cam_sur.camera.camera_id ORDER BY event_id DESC LIMIT 10",
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
-  );
-});
+// GET /v1/api/recent-alerts
+app.get("/v1/api/recent-alerts", authenticateToken, (req, res) =>
+  dbQuery(res, "SELECT building_name, event_type, event_date, camera_loc FROM cam_sur.event JOIN cam_sur.camera ON cam_sur.event.camera_id = cam_sur.camera.camera_id ORDER BY event_id DESC LIMIT 10")
+);
 
-/**
- * GET /v1/api/all-alerts
- * Get all alerts (paginated)
- * SECURITY: Requires authentication + pagination to prevent data dump
- */
+// GET /v1/api/all-alerts  (paginated, max 1000)
 app.get("/v1/api/all-alerts", authenticateToken, (req, res) => {
-  // Add pagination to prevent dumping entire database
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 1000); // Max 1000 per request
-  const offset = (page - 1) * limit;
-
-  db.query(
+  const page  = parseInt(req.query.page,  10) || 1;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 1000);
+  dbQuery(res,
     "SELECT building_name, event_type, event_date, camera_loc FROM cam_sur.event JOIN cam_sur.camera ON cam_sur.event.camera_id = cam_sur.camera.camera_id ORDER BY event_id DESC LIMIT ? OFFSET ?",
-    [limit, offset],
-    (err, result) => {
-      if (err) {
-        console.error('[DB Error]', err);
-        return res.status(500).json({ message: 'Database error' });
-      }
-      res.json(result);
-    }
+    [limit, (page - 1) * limit]
   );
 });
 
@@ -480,12 +368,7 @@ app.post("/v1/api/addFloor", authenticateToken, requireAdmin, (req, res) => {
  * SECURITY: Requires authentication + uses authenticated user's ID
  */
 app.post("/v1/api/billing", authenticateToken, (req, res) => {
-  // SECURITY FIX: Use the authenticated user's ID from the JWT token
-  // Instead of hardcoded user_id = 1
-  // Note: This assumes user_id in transactions table maps to Cognito user sub
-  // Adjust mapping based on your database schema
-
-  const user_id = req.user.sub; // Get user ID from authenticated token
+  const user_id     = req.user.sub; // Cognito user sub
   const balance_rem = parseFloat(req.body.balance_rem) || 0;
 
   if (balance_rem < 0) {
@@ -650,16 +533,6 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
-  console.log(`===========================================`);
-  console.log(`🚀 Secure Node Safety Dashboard Server`);
-  console.log(`===========================================`);
-  console.log(`Port: ${PORT}`);
-  console.log(`CORS: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`===========================================`);
-  console.log(`✓ Authentication: ENABLED`);
-  console.log(`✓ Rate Limiting: ENABLED`);
-  console.log(`✓ Request Logging: ENABLED`);
-  console.log(`===========================================`);
-});
+app.listen(PORT, () =>
+  console.log(`\n🚀 node Safety Dashboard · :${PORT} · ${process.env.NODE_ENV || 'development'} · CORS ${process.env.CORS_ORIGIN || 'http://localhost:3000'}\n`)
+);

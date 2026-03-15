@@ -11,7 +11,11 @@ const ProtectedRoute = ({ children }) => {
   const [status, setStatus] = useState('checking'); // 'checking' | 'ok' | 'denied'
 
   useEffect(() => {
-    // SECURITY: Demo mode bypass removed - all users must authenticate through Cognito
+    // Allow demo mode bypass (sessionStorage flag set by login page)
+    if (sessionStorage.getItem('demo_mode') === 'true') {
+      setStatus('ok');
+      return;
+    }
     Auth.currentAuthenticatedUser()
       .then(() => setStatus('ok'))
       .catch(() => setStatus('denied'));

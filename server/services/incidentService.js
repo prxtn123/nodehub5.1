@@ -27,6 +27,7 @@ try {
 }
 
 const { computeScore } = require('../config/scoring');
+const { makeCache }    = require('../utils/cache');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const BUCKET          = process.env.S3_BUCKET_NAME;
@@ -36,17 +37,7 @@ const s3 = (S3Client && BUCKET)
   ? new S3Client({ region: process.env.AWS_REGION || 'eu-west-2' })
   : null;
 
-// ─── In-memory cache (5-minute TTL) ──────────────────────────────────────────
-const _cache    = {};
-const CACHE_TTL = 5 * 60 * 1000;
-
-function getCached(key) {
-  const e = _cache[key];
-  if (!e) return null;
-  if (Date.now() - e.at > CACHE_TTL) { delete _cache[key]; return null; }
-  return e.v;
-}
-function setCached(key, v) { _cache[key] = { v, at: Date.now() }; }
+const cache = makeCache();
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 function toDateStr(d)   { return d.toISOString().slice(0, 10); }
@@ -95,7 +86,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  */
 async function getSafetyScores() {
   const cacheKey = 'scores';
-  const hit = getCached(cacheKey);
+  const hit = cache.get(cacheKey);
   if (hit) return hit;
 
   const now        = new Date();
@@ -162,7 +153,7 @@ async function getSafetyScores() {
     total_sites:  12,
   };
 
-  setCached(cacheKey, result);
+  cache.set(cacheKey, result);
   return result;
 }
 

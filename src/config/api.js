@@ -40,71 +40,17 @@ export const createAuthenticatedAxios = async () => {
   }
 };
 
-/**
- * Make an authenticated GET request
- * @param {string} endpoint - API endpoint (e.g., '/v1/api/building-details')
- * @param {object} config - Additional axios config
- */
-export const authenticatedGet = async (endpoint, config = {}) => {
-  try {
-    const axiosInstance = await createAuthenticatedAxios();
-    const response = await axiosInstance.get(endpoint, config);
-    return response.data;
-  } catch (error) {
-    console.error(`GET ${endpoint} failed:`, error);
-    throw error;
-  }
+// Private helper – creates authenticated axios instance and dispatches any method
+const authRequest = async (method, endpoint, data, config = {}) => {
+  const ax   = await createAuthenticatedAxios();
+  const args = data !== undefined ? [endpoint, data, config] : [endpoint, config];
+  return (await ax[method](...args)).data;
 };
 
-/**
- * Make an authenticated POST request
- * @param {string} endpoint - API endpoint
- * @param {object} data - Request body
- * @param {object} config - Additional axios config
- */
-export const authenticatedPost = async (endpoint, data, config = {}) => {
-  try {
-    const axiosInstance = await createAuthenticatedAxios();
-    const response = await axiosInstance.post(endpoint, data, config);
-    return response.data;
-  } catch (error) {
-    console.error(`POST ${endpoint} failed:`, error);
-    throw error;
-  }
-};
-
-/**
- * Make an authenticated DELETE request
- * @param {string} endpoint - API endpoint
- * @param {object} config - Additional axios config
- */
-export const authenticatedDelete = async (endpoint, config = {}) => {
-  try {
-    const axiosInstance = await createAuthenticatedAxios();
-    const response = await axiosInstance.delete(endpoint, config);
-    return response.data;
-  } catch (error) {
-    console.error(`DELETE ${endpoint} failed:`, error);
-    throw error;
-  }
-};
-
-/**
- * Make an authenticated PUT request
- * @param {string} endpoint - API endpoint
- * @param {object} data - Request body
- * @param {object} config - Additional axios config
- */
-export const authenticatedPut = async (endpoint, data, config = {}) => {
-  try {
-    const axiosInstance = await createAuthenticatedAxios();
-    const response = await axiosInstance.put(endpoint, data, config);
-    return response.data;
-  } catch (error) {
-    console.error(`PUT ${endpoint} failed:`, error);
-    throw error;
-  }
-};
+export const authenticatedGet    = (ep, cfg)       => authRequest('get',    ep, undefined, cfg);
+export const authenticatedPost   = (ep, data, cfg) => authRequest('post',   ep, data,      cfg);
+export const authenticatedDelete = (ep, cfg)       => authRequest('delete', ep, undefined, cfg);
+export const authenticatedPut    = (ep, data, cfg) => authRequest('put',    ep, data,      cfg);
 
 /**
  * Legacy axios instance for backward compatibility

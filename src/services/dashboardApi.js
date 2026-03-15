@@ -11,6 +11,7 @@
  */
 
 import axios from "axios";
+import { authenticatedGet } from "../config/api";
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3002";
 
@@ -90,6 +91,69 @@ export const MOCK = {
   userStats: [
     { id: "Admin", label: "Administrators", value: 3 },
     { id: "Staff", label: "Staff",          value: 12 },
+  ],
+
+  incidents: [
+    {
+      id: '2026-03-15T08:12:00.000Z-cam-01',
+      timestamp: '2026-03-15T08:12:00.000Z',
+      date: '2026-03-15', time: '08:12:00',
+      incident_type: 'no-high-vis', safety_event_type: 'no-high-vis', group: 'ppe',
+      label: 'No High-Vis Vest', description: 'Person detected not wearing a high-visibility vest', emoji: '🦺',
+      camera_id: 'cam-01', building_name: 'Warehouse A', floor_num: 1, location: 'Loading Bay A',
+      video_url: DEMO_VIDEOS[0], duration: '3.2s', duration_seconds: 3.2,
+      risk_score: 80, severity: 'high', deduction: 10, shift: 'morning',
+    },
+    {
+      id: '2026-03-15T10:44:00.000Z-cam-03',
+      timestamp: '2026-03-15T10:44:00.000Z',
+      date: '2026-03-15', time: '10:44:00',
+      incident_type: 'mhe-close-2.5m', safety_event_type: 'mhe-close-2.5m', group: 'mhe',
+      label: 'MHE Proximity (2.5m)', description: 'Person walking within 2.5m of moving MHE', emoji: '🚜',
+      camera_id: 'cam-03', building_name: 'Warehouse A', floor_num: 1, location: 'Aisle 1',
+      video_url: DEMO_VIDEOS[1], duration: '5.1s', duration_seconds: 5.1,
+      risk_score: 60, severity: 'medium', deduction: 5, shift: 'morning',
+    },
+    {
+      id: '2026-03-15T14:05:00.000Z-cam-06',
+      timestamp: '2026-03-15T14:05:00.000Z',
+      date: '2026-03-15', time: '14:05:00',
+      incident_type: 'mhe-close-1m', safety_event_type: 'mhe-close-1m', group: 'mhe',
+      label: 'MHE Proximity (1m)', description: 'Person walking within 1m of moving MHE', emoji: '🚜',
+      camera_id: 'cam-06', building_name: 'Warehouse A', floor_num: 1, location: 'Dispatch Gate',
+      video_url: DEMO_VIDEOS[2], duration: '2.8s', duration_seconds: 2.8,
+      risk_score: 90, severity: 'high', deduction: 10, shift: 'afternoon',
+    },
+    {
+      id: '2026-03-15T15:30:00.000Z-cam-08',
+      timestamp: '2026-03-15T15:30:00.000Z',
+      date: '2026-03-15', time: '15:30:00',
+      incident_type: 'walkway-exit', safety_event_type: 'walkway-exit', group: 'walkway',
+      label: 'Walkway Exit (>3s)', description: 'Person enters walkway then steps off for more than 3 seconds', emoji: '🚧',
+      camera_id: 'cam-08', building_name: 'Warehouse A', floor_num: 1, location: 'Fire Exit N',
+      video_url: DEMO_VIDEOS[3], duration: '4.0s', duration_seconds: 4.0,
+      risk_score: 25, severity: 'low', deduction: 1, shift: 'afternoon',
+    },
+    {
+      id: '2026-03-15T19:15:00.000Z-cam-02',
+      timestamp: '2026-03-15T19:15:00.000Z',
+      date: '2026-03-15', time: '19:15:00',
+      incident_type: 'dock-door-open', safety_event_type: 'dock-door-open', group: 'dock',
+      label: 'Unattended Dock Door', description: 'Dock door open with no vehicle present on bay', emoji: '🚪',
+      camera_id: 'cam-02', building_name: 'Warehouse A', floor_num: 1, location: 'Loading Bay B',
+      video_url: DEMO_VIDEOS[0], duration: '12.4s', duration_seconds: 12.4,
+      risk_score: 55, severity: 'medium', deduction: 5, shift: 'afternoon',
+    },
+    {
+      id: '2026-03-15T22:48:00.000Z-cam-04',
+      timestamp: '2026-03-15T22:48:00.000Z',
+      date: '2026-03-15', time: '22:48:00',
+      incident_type: 'no-high-vis', safety_event_type: 'no-high-vis', group: 'ppe',
+      label: 'No High-Vis Vest', description: 'Person detected not wearing a high-visibility vest', emoji: '🦺',
+      camera_id: 'cam-04', building_name: 'Warehouse A', floor_num: 1, location: 'Aisle 2',
+      video_url: DEMO_VIDEOS[1], duration: '2.5s', duration_seconds: 2.5,
+      risk_score: 80, severity: 'high', deduction: 10, shift: 'night',
+    },
   ],
 
   // No incidents yet – score starts at 100.
@@ -190,7 +254,7 @@ export const fetchUserStats = async () => {
 
 export const fetchSafetyScores = async () => {
   try {
-    return await get("/v1/api/safety-scores");
+    return await authenticatedGet("/v1/api/safety-scores");
   } catch {
     console.warn("[API] safety-scores unavailable – using mock data");
     return MOCK.safetyScores;
@@ -206,11 +270,11 @@ export const fetchIncidents = async (filters = null) => {
     const params = new URLSearchParams();
     if (filters?.date) params.set('date', filters.date);
     const query = params.toString();
-    const data  = await get(`/v1/api/incidents${query ? '?' + query : ''}`);
+    const data  = await authenticatedGet(`/v1/api/incidents${query ? '?' + query : ''}`);
     return applyIncidentFilters(data, filters);
   } catch {
-    console.warn('[API] incidents unavailable – returning empty list');
-    return [];
+    console.warn('[API] incidents unavailable – using mock data');
+    return MOCK.incidents || [];
   }
 };
 

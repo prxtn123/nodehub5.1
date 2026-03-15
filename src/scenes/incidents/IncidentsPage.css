@@ -232,11 +232,11 @@
   font-weight: 500;
 }
 
-.ip-modal-img {
+.ip-modal-video {
   width: 100%;
   max-height: 480px;
-  object-fit: contain;
   background: #000;
+  display: block;
 }
 
 .ip-modal-desc {

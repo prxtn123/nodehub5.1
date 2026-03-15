@@ -37,14 +37,13 @@ const MapView = () => {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter]     = useState('all');
 
-  const visibleCameras = (cameras) => cameras.filter(c => {
-    if (filter === 'all')      return true;
-    if (filter === 'active')   return c.status === 'active';
-    if (filter === 'inactive') return c.status === 'inactive';
-    if (filter === 'warning')  return c.status === 'warning';
-    if (filter === 'alerts')   return c.incidents > 0;
-    return true;
-  });
+  const filtered = CAMERAS.filter(c =>
+    filter === 'all'      ? true :
+    filter === 'active'   ? c.status === 'active' :
+    filter === 'inactive' ? c.status === 'inactive' :
+    filter === 'warning'  ? c.status === 'warning' :
+    filter === 'alerts'   ? c.incidents > 0 : true
+  );
 
   const activeCams   = CAMERAS.filter(c => c.status === 'active').length;
   const warningCams  = CAMERAS.filter(c => c.status === 'warning').length;
@@ -117,7 +116,7 @@ const MapView = () => {
           ))}
 
           {/* Camera markers */}
-          {visibleCameras(CAMERAS).map(cam => (
+          {filtered.map(cam => (
             <button
               key={cam.id}
               className={`mv-cam-marker${selected?.id === cam.id ? ' mv-cam-marker--selected' : ''}${cam.incidents > 0 ? ' mv-cam-marker--alert' : ''}`}
@@ -179,7 +178,7 @@ const MapView = () => {
         <div className="mv-sidebar">
           <h3 className="mv-sidebar-title">Camera Directory</h3>
           <div className="mv-cam-list">
-            {visibleCameras(CAMERAS).map(cam => (
+            {filtered.map(cam => (
               <div
                 key={cam.id}
                 className={`mv-cam-row${selected?.id === cam.id ? ' mv-cam-row--selected' : ''}`}

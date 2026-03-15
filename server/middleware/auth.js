@@ -29,14 +29,9 @@ const client = jwksClient({
  * Get the signing key from JWKS
  */
 function getKey(header, callback) {
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) {
-      callback(err);
-      return;
-    }
-    const signingKey = key.getPublicKey();
-    callback(null, signingKey);
-  });
+  client.getSigningKey(header.kid, (err, key) =>
+    err ? callback(err) : callback(null, key.getPublicKey())
+  );
 }
 
 /**
@@ -115,19 +110,10 @@ async function authenticateToken(req, res, next) {
  * Usage: app.delete('/admin-route', authenticateToken, requireAdmin, (req, res) => { ... })
  */
 function requireAdmin(req, res, next) {
-  if (!req.user) {
-    return res.status(401).json({
-      message: 'Authentication required.'
-    });
-  }
-
   if (!req.user.isAdmin) {
     console.log(`[AUTHZ] User ${req.user.username} denied admin access to ${req.method} ${req.path}`);
-    return res.status(403).json({
-      message: 'Admin privileges required.'
-    });
+    return res.status(403).json({ message: 'Admin privileges required.' });
   }
-
   console.log(`[AUTHZ] Admin ${req.user.username} authorized for ${req.method} ${req.path}`);
   next();
 }
@@ -180,78 +166,23 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-/**
- * Input Validation Middleware
- */
 const inputValidation = {
-  /**
-   * Validate that a string is safe and within length limits
-   */
-  sanitizeString(str, maxLength = 255) {
-    if (typeof str !== 'string') return '';
-    // Remove any null bytes and trim
-    str = str.replace(/\0/g, '').trim();
-    // Truncate to max length
-    return str.substring(0, maxLength);
-  },
+  sanitizeString: (str, max = 255) =>
+    typeof str !== 'string' ? '' : str.replace(/\0/g, '').trim().substring(0, max),
 
-  /**
-   * Validate that a value is a positive integer
-   */
-  validatePositiveInt(value) {
-    const num = parseInt(value, 10);
-    return !isNaN(num) && num > 0 && Number.isInteger(num);
-  },
+  validatePositiveInt: value => { const n = parseInt(value, 10); return !isNaN(n) && n > 0; },
 
-  /**
-   * Validate email format
-   */
-  validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
+  validateEmail: email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
 
-  /**
-   * Validate date format (YYYY-MM-DD)
-   */
-  validateDate(dateStr) {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateStr)) return false;
-    const date = new Date(dateStr);
-    return date instanceof Date && !isNaN(date);
-  },
+  validateDate: dateStr => /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(new Date(dateStr)),
 
-  /**
-   * Validate latitude (-90 to 90)
-   */
-  validateLatitude(lat) {
-    const num = parseFloat(lat);
-    return !isNaN(num) && num >= -90 && num <= 90;
-  },
+  validateLatitude:  lat => { const n = parseFloat(lat); return !isNaN(n) && n >= -90  && n <= 90;  },
+  validateLongitude: lng => { const n = parseFloat(lng); return !isNaN(n) && n >= -180 && n <= 180; },
 
-  /**
-   * Validate longitude (-180 to 180)
-   */
-  validateLongitude(lng) {
-    const num = parseFloat(lng);
-    return !isNaN(num) && num >= -180 && num <= 180;
-  },
-
-  /**
-   * Validate filename (no path traversal)
-   */
-  validateFilename(filename) {
-    if (typeof filename !== 'string') return false;
-    // Prevent path traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-      return false;
-    }
-    // Check length
-    if (filename.length === 0 || filename.length > 255) {
-      return false;
-    }
-    return true;
-  }
+  validateFilename: filename =>
+    typeof filename === 'string' &&
+    !filename.includes('..') && !filename.includes('/') && !filename.includes('\\') &&
+    filename.length > 0 && filename.length <= 255,
 };
 
 module.exports = {
