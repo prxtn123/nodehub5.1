@@ -146,10 +146,6 @@ const IncidentDashboard = () => {
             <p className="dashboard-subtitle">Real-time warehouse safety monitoring</p>
           </div>
           <div className="dashboard-header-right">
-            <div className="dashboard-status">
-              <span className="status-dot"></span>
-              <span className="status-text">Live</span>
-            </div>
             <button className="nav-btn" onClick={() => navigate('/map')} title="Camera Map">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                 <polygon points="3 11 22 2 13 21 11 13 3 11" />
