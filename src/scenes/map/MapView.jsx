@@ -9,16 +9,9 @@ import './MapView.css';
  */
 
 const CAMERAS = [
-  { id: 'CAM-01', name: 'Loading Bay A', x: 12,  y: 18,  status: 'active',   incidents: 3, lastEvent: 'No High-Vis',     shift: 'morning',   zone: 'Loading' },
-  { id: 'CAM-02', name: 'Loading Bay B', x: 28,  y: 18,  status: 'active',   incidents: 1, lastEvent: 'MHE Too Close',    shift: 'afternoon', zone: 'Loading' },
-  { id: 'CAM-03', name: 'Aisle 1',       x: 15,  y: 42,  status: 'active',   incidents: 5, lastEvent: 'Walkway Zoning',   shift: 'afternoon', zone: 'Storage' },
-  { id: 'CAM-04', name: 'Aisle 2',       x: 35,  y: 42,  status: 'active',   incidents: 2, lastEvent: 'No High-Vis',     shift: 'night',     zone: 'Storage' },
-  { id: 'CAM-05', name: 'Aisle 3',       x: 55,  y: 42,  status: 'inactive', incidents: 0, lastEvent: null,               shift: null,        zone: 'Storage' },
-  { id: 'CAM-06', name: 'Dispatch Gate', x: 75,  y: 18,  status: 'active',   incidents: 4, lastEvent: 'MHE Too Close',    shift: 'morning',   zone: 'Dispatch' },
-  { id: 'CAM-07', name: 'Break Room',    x: 85,  y: 55,  status: 'active',   incidents: 0, lastEvent: null,               shift: null,        zone: 'Amenities' },
-  { id: 'CAM-08', name: 'Fire Exit N',   x: 50,  y: 8,   status: 'active',   incidents: 1, lastEvent: 'Walkway Zoning',   shift: 'night',     zone: 'Exit' },
-  { id: 'CAM-09', name: 'Fire Exit S',   x: 50,  y: 82,  status: 'active',   incidents: 0, lastEvent: null,               shift: null,        zone: 'Exit' },
-  { id: 'CAM-10', name: 'Office Entry',  x: 88,  y: 78,  status: 'warning',  incidents: 2, lastEvent: 'No High-Vis',     shift: 'afternoon', zone: 'Office' },
+  { id: 'CAM-01', name: 'Loading Bay A', x: 20, y: 28, status: 'active', positionLabel: 'Loading' },
+  { id: 'CAM-02', name: 'Aisle 1',       x: 45, y: 50, status: 'active', positionLabel: 'Storage' },
+  { id: 'CAM-03', name: 'Dispatch Gate', x: 70, y: 26, status: 'active', positionLabel: 'Dispatch' },
 ];
 
 const ZONES = [
@@ -35,20 +28,8 @@ const STATUS_LABEL = { active: 'Active', inactive: 'Offline', warning: 'Warning'
 const MapView = () => {
   const navigate  = useNavigate();
   const [selected, setSelected] = useState(null);
-  const [filter, setFilter]     = useState('all');
 
-  const filtered = CAMERAS.filter(c =>
-    filter === 'all'      ? true :
-    filter === 'active'   ? c.status === 'active' :
-    filter === 'inactive' ? c.status === 'inactive' :
-    filter === 'warning'  ? c.status === 'warning' :
-    filter === 'alerts'   ? c.incidents > 0 : true
-  );
-
-  const activeCams   = CAMERAS.filter(c => c.status === 'active').length;
-  const warningCams  = CAMERAS.filter(c => c.status === 'warning').length;
-  const offlineCams  = CAMERAS.filter(c => c.status === 'inactive').length;
-  const totalAlerts  = CAMERAS.reduce((s, c) => s + c.incidents, 0);
+  const filtered = CAMERAS; // simple POC mode uses the 3 configured cameras only
 
   return (
     <div className="mv-page">
@@ -62,34 +43,9 @@ const MapView = () => {
           <div>
             <NodeLogo size="sm" />
             <h1 className="mv-title">Camera Map</h1>
-            <p className="mv-subtitle">Warehouse floor-plan — live camera status</p>
+            <p className="mv-subtitle">Warehouse floor-plan (3 cameras only, POC mode)</p>
           </div>
         </div>
-        <div className="mv-kpis">
-          <div className="mv-kpi"><span className="mv-kpi-dot" style={{background:'#22d3ee'}} />{activeCams} Active</div>
-          <div className="mv-kpi"><span className="mv-kpi-dot" style={{background:'#f59e0b'}} />{warningCams} Warning</div>
-          <div className="mv-kpi"><span className="mv-kpi-dot" style={{background:'#4b5563'}} />{offlineCams} Offline</div>
-          <div className="mv-kpi"><span className="mv-kpi-dot" style={{background:'#f87171'}} />{totalAlerts} Alerts</div>
-        </div>
-      </div>
-
-      {/* ── Filter tabs ── */}
-      <div className="mv-filters">
-        {[
-          { key: 'all',      label: 'All Cameras' },
-          { key: 'active',   label: '🟢 Active'   },
-          { key: 'warning',  label: '🟡 Warning'  },
-          { key: 'inactive', label: '🔴 Offline'  },
-          { key: 'alerts',   label: '⚠️ Has Alerts' },
-        ].map(f => (
-          <button
-            key={f.key}
-            className={`mv-filter-tab${filter === f.key ? ' mv-filter-tab--active' : ''}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
       </div>
 
       {/* ── Main content ── */}
@@ -119,7 +75,7 @@ const MapView = () => {
           {filtered.map(cam => (
             <button
               key={cam.id}
-              className={`mv-cam-marker${selected?.id === cam.id ? ' mv-cam-marker--selected' : ''}${cam.incidents > 0 ? ' mv-cam-marker--alert' : ''}`}
+              className={`mv-cam-marker${selected?.id === cam.id ? ' mv-cam-marker--selected' : ''}`}
               style={{
                 left:   `${cam.x}%`,
                 top:    `${cam.y}%`,
@@ -132,9 +88,6 @@ const MapView = () => {
                 <path d="M23 7l-7 5 7 5V7z" />
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
               </svg>
-              {cam.incidents > 0 && (
-                <span className="mv-cam-badge">{cam.incidents}</span>
-              )}
             </button>
           ))}
 
@@ -153,23 +106,7 @@ const MapView = () => {
               <div className="mv-popup-status" style={{ color: STATUS_COLOR[selected.status] }}>
                 ● {STATUS_LABEL[selected.status]}
               </div>
-              <div className="mv-popup-zone">Zone: {selected.zone}</div>
-              {selected.incidents > 0 ? (
-                <>
-                  <div className="mv-popup-incidents">
-                    <strong>{selected.incidents}</strong> incident{selected.incidents !== 1 ? 's' : ''} this week
-                  </div>
-                  <div className="mv-popup-lastevent">Last: {selected.lastEvent}</div>
-                  <button
-                    className="mv-popup-view-btn"
-                    onClick={() => navigate(`/incidents?shift=${selected.shift}`)}
-                  >
-                    View clips →
-                  </button>
-                </>
-              ) : (
-                <div className="mv-popup-clear">✅ No incidents</div>
-              )}
+              <div className="mv-popup-zone">Area: {selected.positionLabel}</div>
             </div>
           )}
         </div>
@@ -192,9 +129,6 @@ const MapView = () => {
                   <div className="mv-cam-row-id">{cam.id}</div>
                   <div className="mv-cam-row-name">{cam.name}</div>
                 </div>
-                {cam.incidents > 0 && (
-                  <span className="mv-cam-row-badge">{cam.incidents}</span>
-                )}
               </div>
             ))}
           </div>
