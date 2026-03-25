@@ -5,7 +5,7 @@ frontend:
       commands:
         - nvm use 18 || (nvm install 18 && nvm use 18)
         - node --version
-        - npm ci
+        - npm ci --legacy-peer-deps
     build:
       commands:
         - CI=false npm run build
