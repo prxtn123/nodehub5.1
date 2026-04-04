@@ -54,7 +54,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (status === 'denied') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/node/login" replace />;
   }
 
   return children;

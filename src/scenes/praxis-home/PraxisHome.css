@@ -1,0 +1,444 @@
+/* Praxis GB Homepage Styles */
+
+.praxis-home {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f1f5f9;
+}
+
+/* Hero Section */
+.praxis-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 120px 40px 80px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15), transparent),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.praxis-hero-content {
+  max-width: 900px;
+  text-align: left;
+}
+
+.praxis-hero-title {
+  font-size: clamp(48px, 8vw, 92px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 32px 0;
+  letter-spacing: -2px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: slideUp 0.8s ease-out;
+}
+
+.praxis-hero-subtitle {
+  font-size: clamp(18px, 2.5vw, 24px);
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 48px 0;
+  max-width: 700px;
+  animation: slideUp 0.8s ease-out 0.2s backwards;
+}
+
+.praxis-cta {
+  display: inline-block;
+  padding: 18px 36px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+  animation: slideUp 0.8s ease-out 0.4s backwards;
+}
+
+.praxis-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.4);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+/* Sections */
+.praxis-section {
+  padding: 120px 40px;
+  position: relative;
+}
+
+.praxis-section-dark {
+  background: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.praxis-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.praxis-container-narrow {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.praxis-section-title {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 800;
+  margin: 0 0 48px 0;
+  letter-spacing: -1.5px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.praxis-text-large {
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.7;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* Benefits Grid */
+.praxis-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.praxis-benefit-card {
+  padding: 32px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.praxis-benefit-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.praxis-benefit-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.praxis-benefit-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.3px;
+}
+
+.praxis-benefit-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Products Grid */
+.praxis-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.praxis-product-card {
+  padding: 40px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.praxis-product-card-featured {
+  border-color: rgba(96, 165, 250, 0.3);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+}
+
+.praxis-product-card-featured:hover {
+  transform: translateY(-6px);
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 16px 48px rgba(59, 130, 246, 0.2);
+}
+
+.praxis-product-card-placeholder {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.praxis-product-placeholder-content {
+  text-align: center;
+}
+
+.praxis-product-placeholder-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.praxis-product-placeholder-text {
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 600;
+  margin: 0;
+}
+
+.praxis-product-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.praxis-product-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+}
+
+.praxis-product-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0 0 32px 0;
+  flex: 1;
+}
+
+.praxis-product-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.praxis-product-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.praxis-product-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #60a5fa;
+  margin-bottom: 4px;
+}
+
+.praxis-product-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.praxis-product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.praxis-product-link:hover {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: translateX(4px);
+}
+
+/* Footer */
+.praxis-footer {
+  padding: 80px 40px 40px;
+  background: rgba(15, 23, 42, 0.8);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.praxis-footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
+.praxis-footer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.praxis-footer-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+.praxis-footer-text {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.praxis-footer-link {
+  font-size: 14px;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.praxis-footer-link:hover {
+  color: #60a5fa;
+}
+
+.praxis-footer-bottom {
+  padding-top: 32px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  text-align: center;
+}
+
+.praxis-footer-copyright {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .praxis-hero {
+    padding: 100px 20px 60px;
+    min-height: 85vh;
+  }
+
+  .praxis-hero-content {
+    text-align: left;
+  }
+
+  .praxis-hero-title {
+    font-size: 42px;
+    margin-bottom: 24px;
+  }
+
+  .praxis-hero-subtitle {
+    font-size: 18px;
+    margin-bottom: 32px;
+  }
+
+  .praxis-cta {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
+
+  .praxis-section {
+    padding: 80px 20px;
+  }
+
+  .praxis-section-title {
+    font-size: 36px;
+    margin-bottom: 32px;
+  }
+
+  .praxis-benefits-grid,
+  .praxis-products-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 32px;
+  }
+
+  .praxis-product-stats {
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .praxis-product-stat-value {
+    font-size: 20px;
+  }
+
+  .praxis-footer {
+    padding: 60px 20px 32px;
+  }
+
+  .praxis-footer-content {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .praxis-hero-title {
+    font-size: 36px;
+  }
+
+  .praxis-section-title {
+    font-size: 28px;
+  }
+
+  .praxis-benefit-card,
+  .praxis-product-card {
+    padding: 24px;
+  }
+
+  .praxis-product-stats {
+    grid-template-columns: 1fr;
+  }
+}

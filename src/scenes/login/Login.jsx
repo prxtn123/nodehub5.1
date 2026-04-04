@@ -76,7 +76,7 @@ const Login = () => {
         setCognitoUser(user);
         setStage('newpassword');
       } else {
-        navigate('/');
+        navigate('/node');
       }
     } catch (err) {
       setError(friendlyError(err));
@@ -96,7 +96,7 @@ const Login = () => {
     setLoading(true);
     try {
       await Auth.completeNewPassword(cognitoUser, newPassword);
-      navigate('/');
+      navigate('/node');
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -258,7 +258,7 @@ const Login = () => {
                   className="login-demo-btn"
                   onClick={() => {
                     sessionStorage.setItem('demo_mode', 'true');
-                    navigate('/');
+                    navigate('/node');
                   }}
                 >
                   Continue in demo mode

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Auth } from 'aws-amplify';
+import Navigation from '../../components/Navigation';
 import SafetyScorePanel from '../../components/SafetyScorePanel';
 import NodeLogo from '../../components/NodeLogo';
 import { fetchIncidents } from '../../services/dashboardApi';
@@ -32,7 +33,7 @@ const IncidentDashboard = () => {
     try {
       sessionStorage.removeItem('demo_mode');
       await Auth.signOut().catch(() => {}); // no-op if in demo mode
-      navigate('/login');
+      navigate('/node/login');
     } catch (err) {
       console.error('Sign out error:', err);
     }
@@ -131,6 +132,8 @@ const IncidentDashboard = () => {
 
   return (
     <div className="incident-dashboard">
+      {/* Navigation */}
+      <Navigation />
 
       {/* ── Background orbs (purely decorative) ── */}
       <div className="bg-orb bg-orb--cyan"  aria-hidden="true" />
@@ -146,13 +149,13 @@ const IncidentDashboard = () => {
             <p className="dashboard-subtitle">Real-time warehouse safety monitoring</p>
           </div>
           <div className="dashboard-header-right">
-            <button className="nav-btn" onClick={() => navigate('/map')} title="Camera Map">
+            <button className="nav-btn" onClick={() => navigate('/node/map')} title="Camera Map">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                 <polygon points="3 11 22 2 13 21 11 13 3 11" />
               </svg>
               Map
             </button>
-            <button className="nav-btn" onClick={() => navigate('/team')} title="Team & Roles">
+            <button className="nav-btn" onClick={() => navigate('/node/team')} title="Team & Roles">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
@@ -181,7 +184,7 @@ const IncidentDashboard = () => {
       </div>
 
       {/* ── Safety Score Panel ── */}
-      <SafetyScorePanel onScoreClick={() => navigate('/safety-detail')} />
+      <SafetyScorePanel onScoreClick={() => navigate('/node/safety-detail')} />
 
       {/* ── KPI Tiles ── */}
       <div className="stats-grid">
@@ -203,7 +206,7 @@ const IncidentDashboard = () => {
       <div className="type-chart-section">
         <div className="type-chart-header">
           <h3 className="type-chart-title">Incidents by Type</h3>
-          <button className="type-chart-link" onClick={() => navigate('/incidents')}>
+          <button className="type-chart-link" onClick={() => navigate('/node/incidents')}>
             View all clips →
           </button>
         </div>
@@ -216,7 +219,7 @@ const IncidentDashboard = () => {
           <div
             key={key}
             className="type-bar-row"
-            onClick={() => navigate(`/incidents?type=${key}`)}
+            onClick={() => navigate(`/node/incidents?type=${key}`)}
             title={`View ${label} clips`}
           >
             <div className="type-bar-meta">
@@ -256,7 +259,7 @@ const IncidentDashboard = () => {
                     title={count > 0
                       ? `${label} · ${DAYS[i]}: ${count} incident${count !== 1 ? 's' : ''} — click to view clips`
                       : `${label} · ${DAYS[i]}: none`}
-                    onClick={() => count > 0 && navigate(`/incidents?shift=${shift}&day=${DAYS[i]}`)}
+                    onClick={() => count > 0 && navigate(`/node/incidents?shift=${shift}&day=${DAYS[i]}`)}
                   >
                     {count > 0 && <span className="heatmap-count">{count}</span>}
                   </div>
@@ -272,7 +275,7 @@ const IncidentDashboard = () => {
         </div>
         <div className="heatmap-footer">
           <span className="heatmap-footer-hint">💡 Click any cell to view incident clips for that shift</span>
-          <button className="heatmap-view-all" onClick={() => navigate('/incidents')}>
+          <button className="heatmap-view-all" onClick={() => navigate('/node/incidents')}>
             View all clips →
           </button>
         </div>
