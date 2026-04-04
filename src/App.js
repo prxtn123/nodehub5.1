@@ -1,5 +1,6 @@
 import React from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
+import PraxisHome from "./scenes/praxis-home/PraxisHome";
 import IncidentDashboard from "./scenes/incident-dashboard/IncidentDashboard";
 import IncidentsPage from "./scenes/incidents/IncidentsPage";
 import SafetyDetail from "./scenes/safety-detail/SafetyDetail";
@@ -10,19 +11,24 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
 /**
- * node Safety Dashboard - Main App Component
- * /login          — public sign-in page
- * /               — protected dashboard (numbers + graphs)
- * /incidents      — protected incident clips view
- * /safety-detail  — protected safety score deep-dive
+ * Praxis GB / node Safety Dashboard - Main App Component
+ * /               — Praxis GB homepage (public)
+ * /node           — node product dashboard (protected)
+ * /node/login     — node sign-in page
+ * /node/incidents — protected incident clips view
+ * /node/safety-detail — protected safety score deep-dive
  */
 function App() {
   return (
     <div className="app">
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Praxis GB Homepage */}
+        <Route path="/" element={<PraxisHome />} />
+
+        {/* node Product Routes */}
+        <Route path="/node/login" element={<Login />} />
         <Route
-          path="/"
+          path="/node"
           element={
             <ProtectedRoute>
               <IncidentDashboard />
@@ -30,7 +36,7 @@ function App() {
           }
         />
         <Route
-          path="/incidents"
+          path="/node/incidents"
           element={
             <ProtectedRoute>
               <IncidentsPage />
@@ -38,7 +44,7 @@ function App() {
           }
         />
         <Route
-          path="/safety-detail"
+          path="/node/safety-detail"
           element={
             <ProtectedRoute>
               <SafetyDetail />
@@ -46,7 +52,7 @@ function App() {
           }
         />
         <Route
-          path="/map"
+          path="/node/map"
           element={
             <ProtectedRoute>
               <MapView />
@@ -54,14 +60,22 @@ function App() {
           }
         />
         <Route
-          path="/team"
+          path="/node/team"
           element={
             <ProtectedRoute>
               <UserRoles />
             </ProtectedRoute>
           }
         />
-        {/* Catch-all → dashboard */}
+
+        {/* Legacy routes - redirect to /node equivalents */}
+        <Route path="/login" element={<Navigate to="/node/login" replace />} />
+        <Route path="/incidents" element={<Navigate to="/node/incidents" replace />} />
+        <Route path="/safety-detail" element={<Navigate to="/node/safety-detail" replace />} />
+        <Route path="/map" element={<Navigate to="/node/map" replace />} />
+        <Route path="/team" element={<Navigate to="/node/team" replace />} />
+
+        {/* Catch-all → homepage */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
